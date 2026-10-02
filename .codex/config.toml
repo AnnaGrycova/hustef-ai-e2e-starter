@@ -1,0 +1,19 @@
+# Project config for Codex (CLI, IDE extension and app). Codex reads it only after you trust this project.
+# The planner, generator and healer subagents in .codex/agents/ define their own playwright-test server.
+
+[mcp_servers.playwright]
+command = "npx"
+args = ["playwright", "mcp"]
+startup_timeout_sec = 60
+
+[mcp_servers.playwright-test]
+command = "npx"
+args = ["playwright", "run-test-mcp-server"]
+startup_timeout_sec = 60
+# A full test run takes longer than the 60 s default.
+tool_timeout_sec = 900
+
+# Shell commands run in Codex's workspace sandbox, which has no network by default. `npx playwright cli`
+# and `npx playwright test` must reach Gremlin Bank, so this workshop project allows it.
+[sandbox_workspace_write]
+network_access = true

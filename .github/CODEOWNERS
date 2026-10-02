@@ -1,0 +1,10 @@
+# Code owners (Lab 6). GitHub asks these people to review every pull request that touches their paths.
+# With "Require review from Code Owners" in the branch rules for main, an AI-made change to the tests
+# cannot be merged until one of them approves it.
+#
+# Lab 6, step 3: remove the "# " in front of the two lines below and put your neighbour's GitHub
+# username in place of the placeholder. The owner needs write access to your fork
+# (Settings > Collaborators). An unknown username here shows an error on GitHub.
+#
+# /tests/   @your-neighbours-username
+# /specs/   @your-neighbours-username

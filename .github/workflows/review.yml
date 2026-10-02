@@ -1,0 +1,34 @@
+# Review (Lab 6). When someone approves a pull request, report it to the companion app ("Four eyes").
+# The approval itself is the control: branch protection on main requires it before an AI-made change
+# to the tests can be merged.
+
+name: Review
+
+on:
+  pull_request_review:
+    types: [submitted]
+
+permissions:
+  contents: read
+
+jobs:
+  report-approval:
+    name: Report approval
+    if: ${{ github.event.review.state == 'approved' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+
+      - name: Report to companion app
+        env:
+          HUSTEF_TOKEN: ${{ secrets.HUSTEF_TOKEN }}
+          HUSTEF_URL: ${{ vars.HUSTEF_URL || 'https://hustef.shiwa.io' }}
+          HEAD_SHA: ${{ github.event.review.commit_id }}
+        run: |
+          echo "Pull request #${{ github.event.pull_request.number }} approved by ${{ github.event.review.user.login }} at ${{ github.event.review.submitted_at }}."
+          node scripts/report-to-companion.mjs --event review_approved --status success

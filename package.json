@@ -1,0 +1,24 @@
+{
+  "name": "hustef-ai-e2e-starter",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Attendee starter repo for the HUSTEF 2026 workshop on AI-driven end-to-end testing with Playwright MCP, Playwright CLI and the Playwright Test Agents.",
+  "license": "MIT",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "test": "playwright test",
+    "test:ui": "playwright test --ui",
+    "report": "playwright show-report",
+    "doctor": "node scripts/doctor.mjs",
+    "setup": "node scripts/setup.mjs"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.63.0",
+    "@types/node": "24.19.0",
+    "dotenv": "18.0.5",
+    "otpauth": "9.5.2",
+    "typescript": "7.0.2"
+  }
+}

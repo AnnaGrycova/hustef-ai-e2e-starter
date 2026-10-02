@@ -1,0 +1,136 @@
+# E2E (Lab 6). Runs the plain Playwright suite, with no AI model in the loop, and keeps the evidence:
+# HTML report, traces (aria and screen snapshots), videos of failed tests, an audit record in the job
+# summary, and on pull requests a heal audit (scripts/audit-heal.mjs) posted as a comment.
+# Protect main with this check ("E2E") and a required review (labs/lab-6/README.md).
+
+name: E2E
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+    inputs:
+      release:
+        description: "Gremlin Bank release to test: empty follows the facilitator's release, or 1, 2, 3"
+        type: string
+        required: false
+        default: ""
+
+permissions:
+  contents: read
+
+# A manual run with another release (Lab 6: release 2 for "Gremlin tamer") does not cancel a running one.
+concurrency:
+  group: e2e-${{ github.event_name }}-${{ github.ref }}-${{ inputs.release }}
+  cancel-in-progress: true
+
+jobs:
+  e2e:
+    name: E2E
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+      pull-requests: write # the heal audit comment
+    env:
+      GREMLIN_URL: ${{ vars.GREMLIN_URL || 'https://gremlin.shiwa.io' }}
+      GREMLIN_RELEASE: ${{ inputs.release }}
+      HUSTEF_URL: ${{ vars.HUSTEF_URL || 'https://hustef.shiwa.io' }}
+      PLAYWRIGHT_JSON_OUTPUT_NAME: test-results/results.json
+      HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0 # the heal audit compares with the base branch
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Create .env from the example (values set above take precedence)
+        run: cp .env.example .env
+
+      - name: Install Playwright Chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: Resolve the release under test
+        id: release
+        run: |
+          case "$GREMLIN_RELEASE" in
+            ""|1|2|3) ;;
+            *) echo "::error::The release input must be empty, 1, 2 or 3 (got '$GREMLIN_RELEASE')."; exit 1 ;;
+          esac
+          if [ -n "$GREMLIN_RELEASE" ]; then
+            echo "release=$GREMLIN_RELEASE" >> "$GITHUB_OUTPUT"
+            echo "source=pinned with the gb_release cookie (workflow input)" >> "$GITHUB_OUTPUT"
+          else
+            release=$(curl -fsS --max-time 15 "$GREMLIN_URL/health" | node -e 'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>{try{console.log(JSON.parse(s).release??"")}catch{console.log("")}})' || true)
+            echo "release=${release:-unknown}" >> "$GITHUB_OUTPUT"
+            echo "source=facilitator's global release, read from /health before the run" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Run Playwright tests
+        id: tests
+        run: npx playwright test --reporter=list,html,json
+
+      - name: Upload HTML report
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: playwright-report
+          path: playwright-report/
+          retention-days: 30
+
+      - name: Upload traces and videos
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: test-results
+          path: test-results/
+          retention-days: 30
+
+      - name: Write the audit record to the job summary
+        if: ${{ !cancelled() }}
+        env:
+          RELEASE_UNDER_TEST: ${{ steps.release.outputs.release }}
+          RELEASE_SOURCE: ${{ steps.release.outputs.source }}
+          TEST_OUTCOME: ${{ steps.tests.outcome }}
+        run: node scripts/ci-summary.mjs >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Heal audit (pull requests)
+        id: audit
+        if: ${{ !cancelled() && github.event_name == 'pull_request' }}
+        continue-on-error: true
+        run: |
+          status=0
+          node scripts/audit-heal.mjs --base "origin/${{ github.base_ref }}" --out audit-heal.md || status=$?
+          cat audit-heal.md >> "$GITHUB_STEP_SUMMARY"
+          exit $status
+
+      - name: Post the heal audit on the pull request
+        if: ${{ !cancelled() && github.event_name == 'pull_request' }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: |
+          [ -f audit-heal.md ] || exit 0
+          gh pr comment "$PR_NUMBER" --repo "$GITHUB_REPOSITORY" --body-file audit-heal.md --edit-last --create-if-none \
+            || gh pr comment "$PR_NUMBER" --repo "$GITHUB_REPOSITORY" --body-file audit-heal.md \
+            || echo "Could not comment on the pull request (pull requests from forks get a read-only token)."
+
+      - name: Report to companion app
+        if: ${{ !cancelled() }}
+        env:
+          HUSTEF_TOKEN: ${{ secrets.HUSTEF_TOKEN }}
+          RELEASE_UNDER_TEST: ${{ steps.release.outputs.release }}
+        run: node scripts/report-to-companion.mjs --event run --status "${{ steps.tests.outcome == 'success' && 'success' || 'failure' }}"
+
+      - name: Fail when the heal audit failed
+        if: ${{ steps.audit.outcome == 'failure' }}
+        run: |
+          echo "The heal audit failed: an expected value changed without a BUG entry or a human sign-off. See the job summary."
+          exit 1

@@ -1,0 +1,6 @@
+{
+  // VS Code's built-in browser tools for chat are on by default. They are switched off here so that
+  // Copilot uses the Playwright MCP servers from .vscode/mcp.json, which the labs are written for.
+  // Remove this line (or set it to true) to get the built-in browser tools back.
+  "workbench.browser.enableChatTools": false
+}

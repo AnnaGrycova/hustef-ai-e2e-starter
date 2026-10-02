@@ -1,0 +1,4 @@
+# Text files are stored with LF in the repository. Git for Windows may check them out with CRLF;
+# shell scripts always keep LF so that ./scripts/setup.sh also runs in Git Bash and WSL.
+* text=auto
+*.sh text eol=lf
