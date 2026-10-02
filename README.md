@@ -44,7 +44,9 @@ The setup script checks Node.js, Git and Chrome, runs `npm ci`, downloads Playwr
 | GitHub Copilot in VS Code | [docs/setup/copilot-vscode.md](docs/setup/copilot-vscode.md) |
 | GitHub Copilot CLI | [docs/setup/copilot-cli.md](docs/setup/copilot-cli.md) |
 | Claude Code | [docs/setup/claude-code.md](docs/setup/claude-code.md) |
+| Claude Code desktop app (no terminal) | [docs/setup/claude-code-desktop.md](docs/setup/claude-code-desktop.md) |
 | OpenAI Codex | [docs/setup/codex.md](docs/setup/codex.md) |
+| Codex desktop app (no terminal) | [docs/setup/codex-app.md](docs/setup/codex-app.md) |
 | Cursor | [docs/setup/cursor.md](docs/setup/cursor.md) |
 | opencode | [docs/setup/opencode.md](docs/setup/opencode.md) |
 | Google Antigravity | [docs/setup/antigravity.md](docs/setup/antigravity.md) |

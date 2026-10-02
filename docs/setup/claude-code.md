@@ -6,6 +6,8 @@ order: 3
 
 # Claude Code
 
+This card is for Claude Code in the terminal. For the Code tab of the Claude desktop app (no terminal), see the "Claude Code desktop app" card.
+
 ## 1. Plan
 
 Claude Pro, $20/month ($17/month billed yearly). The free Claude plan does not include Claude Code.

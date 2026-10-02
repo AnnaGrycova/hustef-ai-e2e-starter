@@ -28,8 +28,8 @@ Please do this at home or at the office before Tuesday 6 October. It takes about
 | Tool | Plan that works for the day | Notes |
 |---|---|---|
 | GitHub Copilot in VS Code (or Copilot CLI) | Copilot Pro, $10/month | Copilot Free (about 50 chat requests a month) runs out within the first hour. Pro trials are paused by GitHub, so you need a paid month. On a company Copilot Business/Enterprise seat, MCP is off by default: ask your admin to enable "MCP servers in Copilot". |
-| Claude Code | Claude Pro, $20/month ($17/month billed yearly) | The free Claude plan does not include Claude Code. |
-| OpenAI Codex (CLI or IDE extension) | ChatGPT Plus, $20/month | Codex is also in ChatGPT Free and Go ($8), but their limits are not published and may not last the day. |
+| Claude Code (terminal or the Claude desktop app) | Claude Pro, $20/month ($17/month billed yearly) | The free Claude plan does not include Claude Code. |
+| OpenAI Codex (CLI, IDE extension or the ChatGPT desktop app) | ChatGPT Plus, $20/month | Codex is also in ChatGPT Free and Go ($8), but their limits are not published and may not last the day. |
 | Cursor | Cursor Pro, $20/month | The free Hobby plan has no MCP and no skills, so it does not work for this workshop. |
 | Free fallback | opencode with its free models, or Google Antigravity CLI on the free plan | No subscription, but limits are not guaranteed for a full day, and free models may use your data for training (fine for our demo app, not for company code). |
 
@@ -55,6 +55,8 @@ powershell -ExecutionPolicy Bypass -File scripts\setup.ps1
 ```
 
 The setup script checks Node and Git, installs the pinned packages (`npm ci`), downloads Playwright's Chromium, creates your `.env` file, and runs the doctor.
+
+No terminal? With the Claude Code desktop app or the Codex desktop app, the agent can clone the repo and run the setup script for you: the setup cards for those two apps show the prompts.
 
 Windows: if PowerShell later says `npm.ps1` or `npx.ps1` "cannot be loaded because running scripts is disabled on this system", allow local scripts for your user once with `Set-ExecutionPolicy -Scope CurrentUser RemoteSigned` (the setup script warns you when you need it). If your company does not allow that, type `npm.cmd` and `npx.cmd` instead.
 

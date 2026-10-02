@@ -1,10 +1,12 @@
 ---
 id: codex
 title: OpenAI Codex
-order: 4
+order: 5
 ---
 
 # OpenAI Codex (CLI or IDE extension)
+
+This card is for the Codex CLI and the IDE extension. For Codex in the ChatGPT desktop app (no terminal), see the "Codex desktop app" card.
 
 ## 1. Plan
 

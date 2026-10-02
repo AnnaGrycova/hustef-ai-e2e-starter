@@ -1,7 +1,7 @@
 ---
 id: antigravity
 title: Google Antigravity
-order: 7
+order: 9
 ---
 
 # Google Antigravity (app or CLI)

@@ -1,7 +1,7 @@
 ---
 id: other
 title: Other MCP clients
-order: 8
+order: 10
 ---
 
 # Other AI tools with MCP support
