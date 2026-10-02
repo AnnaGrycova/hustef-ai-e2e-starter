@@ -1,11 +1,12 @@
 import { expect, type BrowserContext, type Page } from '@playwright/test';
+import { env } from '../fixtures';
 
 // Helpers for the Lab 5 wall tests only. They work on every Gremlin Bank release, so that in Lab 5
 // you can focus on the wall and not on the release the facilitator has shipped.
 // Your own tests in tests/ do not use this file.
 
-/** Transaction PIN of the demo users. Test data, published in the lab texts. */
-export const TEST_PIN = '2468';
+/** Transaction PIN of the demo users (test data), from GREMLIN_PIN in .env. */
+export const TEST_PIN = env('GREMLIN_PIN');
 
 /** IBAN of the saved payee Kiss Péter (fictional, valid checksum). */
 export const KISS_PETER_IBAN = 'HU72 9990 1017 1618 0339 8874 9892';

@@ -3,7 +3,10 @@ import { defineConfig, devices } from '@playwright/test';
 import dotenv from 'dotenv';
 
 // Values from .env. Variables already set in your shell win (GREMLIN_RELEASE=2 npx playwright test ...).
+// .env.example then fills in keys your .env does not have yet (for example a key added after you
+// created .env). It never overrides a value you set.
 dotenv.config({ path: path.resolve(__dirname, '.env'), quiet: true });
+dotenv.config({ path: path.resolve(__dirname, '.env.example'), quiet: true });
 
 // Optional: a Chromium binary to use instead of the one `npx playwright install chromium` downloads.
 // Only for machines where the download is impossible. Never hardcode a path here.
@@ -43,6 +46,8 @@ export default defineConfig({
   testIgnore: ignored,
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
+  // One retry in CI. A test that passes only on the retry is reported as "flaky": treat that as a
+  // signal to quarantine and fix the test, not as a pass (the job summary shows the flaky count).
   retries: process.env.CI ? 1 : 0,
   workers: process.env.CI ? 2 : undefined,
   timeout: 30_000,
@@ -51,6 +56,8 @@ export default defineConfig({
   use: {
     baseURL: process.env.GREMLIN_URL || 'https://gremlin.shiwa.io',
     // Playwright 1.63: record aria and screen snapshots in every trace ("Display Aria" in the trace viewer).
+    // 'on' is deliberate for the workshop: Lab 3 reads a trace and Lab 6 keeps traces of green runs as
+    // evidence. Playwright recommends 'on-first-retry' for everyday CI, because 'on' is slower.
     trace: { mode: 'on', snapshots: { dom: true, aria: true, screen: true } },
     video: 'retain-on-failure',
     screenshot: 'only-on-failure',

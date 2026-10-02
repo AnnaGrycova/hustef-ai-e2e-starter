@@ -19,7 +19,7 @@ test.describe('dashboard, signed in', () => {
   });
 
   test('shows the session code', async ({ page }) => {
-    await expect(page.getByTestId('session-code')).toHaveText(/^Session code: GRM-[A-Z0-9-]+$/);
+    await expect(page.getByText(/^Session code: GRM-[A-Z0-9-]+$/)).toBeVisible();
   });
 
   test('shows five seeded recent transactions', async ({ page }) => {

@@ -12,7 +12,8 @@
     "test:ui": "playwright test --ui",
     "report": "playwright show-report",
     "doctor": "node scripts/doctor.mjs",
-    "setup": "node scripts/setup.mjs"
+    "setup": "node scripts/setup.mjs",
+    "typecheck": "tsc --noEmit"
   },
   "devDependencies": {
     "@playwright/test": "1.63.0",

@@ -49,8 +49,16 @@ lines.push(`| Triggered by | ${escape(e.GITHUB_ACTOR || '(unknown)')} (${escape(
 lines.push(`| Run | ${runUrl} |`);
 lines.push(`| Playwright | ${playwrightVersion} |`);
 lines.push(`| Gremlin Bank | ${escape(e.GREMLIN_URL || 'https://gremlin.shiwa.io')}, release ${escape(e.RELEASE_UNDER_TEST || '?')} (${escape(e.RELEASE_SOURCE || 'unknown source')}) |`);
+// Tests marked test.fail() for a known bug: they count as "expected" in the stats, so list them on their own.
+const knownBugs = [];
+const walk = (suite) => {
+  for (const child of suite?.suites ?? []) walk(child);
+  for (const spec of suite?.specs ?? []) for (const t of spec.tests ?? []) if (t.expectedStatus === 'failed') knownBugs.push(spec.title);
+};
+for (const suite of results?.suites ?? []) walk(suite);
 if (stats) {
-  lines.push(`| Tests | ${stats.expected ?? 0} passed, ${stats.unexpected ?? 0} failed, ${stats.flaky ?? 0} flaky, ${stats.skipped ?? 0} skipped (fixme or skip) |`);
+  const passed = Math.max(0, (stats.expected ?? 0) - knownBugs.length);
+  lines.push(`| Tests | ${passed} passed, ${knownBugs.length} known bugs (test.fail, failing as expected), ${stats.unexpected ?? 0} failed, ${stats.flaky ?? 0} flaky, ${stats.skipped ?? 0} skipped (fixme or skip) |`);
   lines.push(`| Duration | ${Math.round((stats.duration ?? 0) / 1000)} s |`);
 } else {
   lines.push('| Tests | no results file (the test step did not finish) |');
@@ -60,6 +68,11 @@ if (report) {
   lines.push(`| Heal report | ${entries.length} entries: DRIFT ${count('DRIFT')}, BUG ${count('BUG')}, UNSURE ${count('UNSURE')}; tool ${escape(report.tool ?? entries[0]?.tool ?? '?')}, model ${escape(report.model ?? entries[0]?.model ?? '?')} |`);
 } else {
   lines.push('| Heal report | none in this commit |');
+}
+
+if (knownBugs.length) {
+  lines.push('');
+  lines.push(`Known bugs still failing as expected (test.fail): ${knownBugs.map((t) => escape(t)).join('; ')}. They turn red when the bug is fixed.`);
 }
 
 const bugs = entries.filter((x) => x?.classification === 'BUG');

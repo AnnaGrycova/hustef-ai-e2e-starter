@@ -1,0 +1,61 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/gyurmatag/hustef-ai-e2e-starter/blob/main/labs/lab-4/heal-report.schema.json",
+  "title": "Heal report",
+  "description": "Written by the governed healer (Lab 4) to heal-report.json in the repository root. One entry per failing test. Checked in CI by scripts/audit-heal.mjs (Lab 6).",
+  "type": "object",
+  "required": ["version", "createdAt", "release", "tool", "model", "entries"],
+  "properties": {
+    "version": { "const": 1 },
+    "createdAt": { "type": "string", "format": "date-time", "description": "When the healer ran (ISO 8601)." },
+    "release": { "enum": [1, 2, 3, null], "description": "Gremlin Bank release under test (footer 'Release N'), null if unknown." },
+    "tool": { "type": "string", "minLength": 1, "description": "AI tool, for example claude-code, copilot-vscode, copilot-cli, codex, cursor, opencode, antigravity." },
+    "model": { "type": "string", "minLength": 1, "description": "Model name as the tool shows it." },
+    "requestedBy": { "type": "string", "description": "Who asked for the heal (GitHub username or name)." },
+    "entries": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/entry" }
+    }
+  },
+  "additionalProperties": true,
+  "$defs": {
+    "entry": {
+      "type": "object",
+      "required": ["test", "file", "error", "classification", "change", "expectedValueChanged", "tracePath", "model", "tool"],
+      "properties": {
+        "test": { "type": "string", "minLength": 1, "description": "file:line > describe > title" },
+        "file": { "type": "string", "minLength": 1, "description": "Test file path relative to the repository root, for example tests/transfer.spec.ts" },
+        "error": { "type": "string", "minLength": 1, "description": "First line of the failure message." },
+        "classification": {
+          "enum": ["DRIFT", "BUG", "UNSURE"],
+          "description": "DRIFT: the UI changed, the behaviour is the same. BUG: the behaviour changed. UNSURE: cannot tell."
+        },
+        "reason": { "type": "string", "description": "Why this classification, in one or two sentences." },
+        "change": { "type": "string", "minLength": 1, "description": "What the healer changed. 'none' for UNSURE; for BUG only the test.fail() marker and comment." },
+        "expectedValueChanged": { "type": "boolean", "description": "Whether an expected value in an assertion changed. The governed healer always writes false." },
+        "expected": { "type": "string", "description": "Expected value (required for BUG), with the rule it comes from." },
+        "observed": { "type": "string", "description": "Value the application showed (required for BUG)." },
+        "tracePath": { "type": "string", "minLength": 1, "description": "Trace of the failing run, for example test-results/<test>/trace.zip" },
+        "model": { "type": "string", "minLength": 1 },
+        "tool": { "type": "string", "minLength": 1 },
+        "humanSignOff": {
+          "type": "object",
+          "description": "Added by a person (not by the agent) who accepts a changed expected value.",
+          "required": ["by", "at", "reason"],
+          "properties": {
+            "by": { "type": "string", "minLength": 1 },
+            "at": { "type": "string", "format": "date-time" },
+            "reason": { "type": "string", "minLength": 1 }
+          }
+        }
+      },
+      "allOf": [
+        {
+          "if": { "properties": { "classification": { "const": "BUG" } } },
+          "then": { "required": ["expected", "observed"] }
+        }
+      ],
+      "additionalProperties": true
+    }
+  }
+}

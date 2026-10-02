@@ -78,6 +78,7 @@ Fell behind? Every lab ends with a checkpoint branch: `lab-1-done` to `lab-6-don
 | `npm run report` | open the last HTML report |
 | `npm run doctor` | check the setup and the network, report to the companion app |
 | `npm run setup` | run the setup script for your OS |
+| `npm run typecheck` | type-check the TypeScript files (`tsc --noEmit`) |
 | `npx playwright test tests/walls/totp.spec.ts` | run one Lab 5 wall (walls and `examples/` only run when named) |
 
 Settings live in `.env` (copy of `.env.example`). `GREMLIN_RELEASE` empty follows the release the facilitator ships; `1`, `2` or `3` pins one.

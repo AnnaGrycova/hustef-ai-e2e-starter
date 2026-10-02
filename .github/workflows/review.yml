@@ -29,6 +29,10 @@ jobs:
           HUSTEF_TOKEN: ${{ secrets.HUSTEF_TOKEN }}
           HUSTEF_URL: ${{ vars.HUSTEF_URL || 'https://hustef.shiwa.io' }}
           HEAD_SHA: ${{ github.event.review.commit_id }}
+          # Event values go through the environment, not into the script text (GitHub hardening guide).
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          REVIEWER: ${{ github.event.review.user.login }}
+          SUBMITTED_AT: ${{ github.event.review.submitted_at }}
         run: |
-          echo "Pull request #${{ github.event.pull_request.number }} approved by ${{ github.event.review.user.login }} at ${{ github.event.review.submitted_at }}."
+          echo "Pull request #$PR_NUMBER approved by $REVIEWER at $SUBMITTED_AT."
           node scripts/report-to-companion.mjs --event review_approved --status success

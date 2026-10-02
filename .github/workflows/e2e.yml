@@ -38,6 +38,8 @@ jobs:
       HUSTEF_URL: ${{ vars.HUSTEF_URL || 'https://hustef.shiwa.io' }}
       PLAYWRIGHT_JSON_OUTPUT_NAME: test-results/results.json
       HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+    # The actions are pinned to a major version tag to keep the workshop readable. GitHub's hardening
+    # guide recommends pinning to a full commit SHA in real projects (Dependabot keeps the SHAs current).
     steps:
       - uses: actions/checkout@v7
         with:
@@ -51,6 +53,14 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      # Playwright runs TypeScript without a type check, so a wrong signature only shows up here.
+      # Report only in the workshop; make it blocking in your own project (remove continue-on-error).
+      - name: Type check
+        continue-on-error: true
+        run: npm run typecheck
+
+      # The demo credentials are public test data, so the example file is enough here. In a real project
+      # the password comes from a repository secret, for example GREMLIN_PASSWORD: ${{ secrets.GREMLIN_PASSWORD }}.
       - name: Create .env from the example (values set above take precedence)
         run: cp .env.example .env
 
@@ -105,9 +115,11 @@ jobs:
         id: audit
         if: ${{ !cancelled() && github.event_name == 'pull_request' }}
         continue-on-error: true
+        env:
+          BASE_REF: ${{ github.base_ref }}
         run: |
           status=0
-          node scripts/audit-heal.mjs --base "origin/${{ github.base_ref }}" --out audit-heal.md || status=$?
+          node scripts/audit-heal.mjs --base "origin/$BASE_REF" --out audit-heal.md || status=$?
           cat audit-heal.md >> "$GITHUB_STEP_SUMMARY"
           exit $status
 
@@ -132,5 +144,5 @@ jobs:
       - name: Fail when the heal audit failed
         if: ${{ steps.audit.outcome == 'failure' }}
         run: |
-          echo "The heal audit failed: an expected value changed without a BUG entry or a human sign-off. See the job summary."
+          echo "The heal audit failed: an expected value changed without a human sign-off in heal-report.json. See the job summary."
           exit 1

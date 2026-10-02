@@ -8,7 +8,7 @@ Everything you need during the day is in the companion app: https://hustef.shiwa
 |---|---|---|
 | 8:30-9:00 | Setup desk | Arrive early if `npm run doctor` was not green at home. We fix installs, network and AI tool access together. Join the companion app with code `HUSTEF26`. |
 | 9:00-9:15 | Kickoff | Who is in the room, what we build today, how the day works. Join the companion app. |
-| 9:15-9:45 | M1 First principles and the MCP paradigm | How an LLM uses tools, what an agent loop is, what MCP is. Selectors vs screenshots vs accessibility snapshots, and why that changes the cost of test maintenance. A 5-minute live demo: an agent signs in to a bank and writes a test. |
+| 9:15-9:45 | Talk: First principles and the MCP paradigm | How an LLM uses tools, what an agent loop is, what MCP is. Selectors vs screenshots vs accessibility snapshots, and why that changes the cost of test maintenance. A 5-minute live demo: an agent signs in to a bank and writes a test. |
 | 9:45-10:30 | Lab 1 First drive | Connect your agent to Playwright MCP and Playwright CLI. Drive Gremlin Bank with prompts. Read what only the accessibility snapshot shows. Watch a CSS-selector test break on a UI release while the agent copes. Measure MCP vs CLI token use. |
 | 10:30-10:45 | Coffee | |
 | 10:45-11:25 | Lab 2 Explore and plan | The planner agent maps an application it has never seen and writes a structured test plan. You review it as a tester: negative cases, boundaries, risk tags. Run it twice and compare. |
@@ -18,8 +18,8 @@ Everything you need during the day is in the companion app: https://hustef.shiwa
 | 14:20-15:00 | Lab 5 Where agents break | Four walls: authentication, multi-factor flows (with the pause-and-attach handoff to a human), Shadow DOM and canvas, non-determinism. A pattern for each. |
 | 15:00-15:15 | Coffee | |
 | 15:15-15:45 | Lab 6 CI/CD and audit trail | Run the suite in GitHub Actions with traces, video and an audit summary. Protect `main`, require a second person's approval for AI-made changes, and pass a heal through a reviewed pull request. |
-| 15:45-16:00 | M7 Decision framework | Local development, context-constrained agents, cloud-scale execution, managed platforms, and options for Cypress and Selenium teams. Scenario cards exercise. |
-| 16:00-16:20 | M8 Strategy canvas | Teams of three design an AI agent testing strategy for a bank, insurer, telco, healthcare or fintech scenario: governance, oversight, the QA engineer's new role. 90-second pitches. |
+| 15:45-16:00 | Talk: Choosing tools, a decision framework | Local development, context-constrained agents, cloud-scale execution, managed platforms, and options for Cypress and Selenium teams. Scenario cards exercise. |
+| 16:00-16:20 | Team exercise: Strategy canvas | Teams of two or three design an AI agent testing strategy for one of six scenarios from your own industries: governance, oversight, the QA engineer's new role. 90-second pitches. |
 | 16:20-16:30 | Monday plan and wrap-up | Three steps for your own project, awards, feedback. |
 
 You leave with: a working setup on your laptop, a repo with configs for every major AI coding tool, a reviewed and healed test suite, a pipeline with an approval gate, and a plan for Monday.

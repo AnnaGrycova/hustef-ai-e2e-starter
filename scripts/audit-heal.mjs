@@ -4,15 +4,20 @@
 //   node scripts/audit-heal.mjs [--base <ref>] [--head <ref>] [--report heal-report.json] [--out audit-heal.md]
 //
 // 1. Compares the test code under tests/ between the base and the head of the change (git diff).
+//    A test file that does not exist at the merge base (new on this branch: from a checkpoint, the
+//    generator or a fork whose main has no tests yet) is compared with its version in the commit that
+//    added it, so a heal committed later on the branch is still seen.
 //    Business values are literals that contain a digit (amounts, fees, totals, balances, limits, counts).
 //    A business value that disappears from the test code is a changed (or deleted) expected value.
 //    Values that only move between files (for example into a page object) do not count.
+//    tests/walls/ (the Lab 5 exercises, not part of the suite) is listed but not audited.
 // 2. Validates heal-report.json (labs/lab-4/heal-report.schema.json): fields, classification,
 //    expectedValueChanged.
 // 3. Fails (exit code 1) when an expected business value changed and heal-report.json does not list that
-//    change: an entry for the file with expectedValueChanged: true and classification BUG or a human
-//    sign-off. Also fails when a DRIFT or UNSURE entry says expectedValueChanged: true without a human
-//    sign-off, and when the report is invalid.
+//    change with a human sign-off (an entry for the file with expectedValueChanged: true and humanSignOff).
+//    An agent's own classification, BUG included, is never enough to change an expected value (the test's
+//    oracle). Also fails when any entry says expectedValueChanged: true without a human sign-off, and when
+//    the report is invalid.
 //
 // Changed expected texts (toHaveText('...') and similar) are listed for review but do not fail the check:
 // renamed messages are normal UI drift. The summary is written as Markdown for the GitHub job summary
@@ -102,7 +107,14 @@ function businessLiterals(code) {
   while ((m = stringRe.exec(code))) {
     if (/\d/.test(m[2]) && !m[2].includes('${')) found.push({ value: normalize(m[2]), raw: m[2] });
   }
-  const withoutStrings = code.replace(stringRe, (s) => ' '.repeat(s.length));
+  let withoutStrings = code.replace(stringRe, (s) => ' '.repeat(s.length));
+  // Regular expression literals, for example toHaveText(/-100,300 HUF$/), count as one value.
+  const regexRe = /(?<=[(,=:!&|?]\s*)\/((?:\\.|\[(?:\\.|[^\]\n])*\]|[^/\\\n[])+)\/[dgimsuyv]*/g;
+  while ((m = regexRe.exec(withoutStrings))) {
+    // Quantifiers such as {2} or {4,6} describe a format, not a value: /^HU\d{2}( \d{4}){6}$/ is not a business value.
+    if (/\d/.test(m[1].replace(/\{\d+(?:,\d*)?\}/g, ''))) found.push({ value: normalize(m[0]), raw: m[0] });
+  }
+  withoutStrings = withoutStrings.replace(regexRe, (s) => ' '.repeat(s.length));
   const numberRe = /(?<![\w.$])(\d[\d_]*(?:\.\d+)?)(?![\w])/g;
   while ((m = numberRe.exec(withoutStrings))) {
     const before = withoutStrings.slice(0, m.index);
@@ -132,17 +144,39 @@ function expectedTexts(code) {
 // ---------------------------------------------------------------------------------------------
 // Diff
 
-const changedFiles = (tryGit('diff', '--name-only', '--diff-filter=ADMR', mergeBase, headRef, '--', 'tests') ?? '')
+// tests/walls/ holds the Lab 5 exercises. They are not part of the suite (playwright.config.ts runs them
+// only when named), and fixing one means removing its wrong assertions, so they are listed, not audited.
+const NOT_AUDITED = /^tests\/walls\//;
+const changedTestFiles = (tryGit('diff', '--name-only', '--diff-filter=ADMR', mergeBase, headRef, '--', 'tests') ?? '')
   .split('\n')
   .filter((f) => /\.(m|c)?[jt]sx?$/.test(f));
+const changedFiles = changedTestFiles.filter((f) => !NOT_AUDITED.test(f));
+const notAudited = changedTestFiles.filter((f) => NOT_AUDITED.test(f));
+
+const existsAt = (ref, file) => tryGit('cat-file', '-e', `${ref}:${file}`) !== undefined;
+const newOnBranch = [];
+/** The merge base, or for a file that is new on this branch the commit that added it. */
+function baselineFor(file) {
+  if (existsAt(mergeBase, file)) return mergeBase;
+  const added = (tryGit('log', '--diff-filter=A', '--format=%H', '--reverse', `${mergeBase}..${headRef}`, '--', file) ?? '').split('\n').filter(Boolean);
+  if (!added.length) return mergeBase;
+  newOnBranch.push(file);
+  return added[0];
+}
 
 const removed = []; // { file, line, value, text }
 const added = [];
 const removedTexts = [];
 const addedTexts = [];
+// Annotations (test.fail, test.fixme, test.skip, test.slow) are not expected values. A removed known-bug
+// mark is listed for review: it is right when the bug was fixed, wrong when a healer made the test pass.
+const ANNOTATION_RE = /\btest(?:\.describe)?\.(?:fail|fixme|skip|slow)\(/;
+const KNOWN_BUG_RE = /\btest(?:\.describe)?\.(?:fail|fixme)\(/;
+const removedMarks = [];
+const addedMarks = [];
 
 for (const file of changedFiles) {
-  const diff = tryGit('diff', '-U0', '--no-color', mergeBase, headRef, '--', file) ?? '';
+  const diff = tryGit('diff', '-U0', '--no-color', baselineFor(file), headRef, '--', file) ?? '';
   let oldLine = 0;
   let newLine = 0;
   let hunkId = 0;
@@ -159,12 +193,16 @@ for (const file of changedFiles) {
     if (raw.startsWith('---') || raw.startsWith('+++')) continue;
     if (raw.startsWith('-')) {
       const code = stripComments(raw.slice(1), oldState);
-      for (const lit of businessLiterals(code)) removed.push({ file, hunk: hunkId, line: oldLine, ...lit });
+      if (ANNOTATION_RE.test(code)) {
+        if (KNOWN_BUG_RE.test(code)) removedMarks.push({ file, line: oldLine, code: code.trim() });
+      } else for (const lit of businessLiterals(code)) removed.push({ file, hunk: hunkId, line: oldLine, ...lit });
       for (const value of expectedTexts(code)) removedTexts.push({ file, line: oldLine, value });
       oldLine++;
     } else if (raw.startsWith('+')) {
       const code = stripComments(raw.slice(1), newState);
-      for (const lit of businessLiterals(code)) added.push({ file, hunk: hunkId, line: newLine, ...lit });
+      if (ANNOTATION_RE.test(code)) {
+        if (KNOWN_BUG_RE.test(code)) addedMarks.push({ file, line: newLine, code: code.trim() });
+      } else for (const lit of businessLiterals(code)) added.push({ file, hunk: hunkId, line: newLine, ...lit });
       for (const value of expectedTexts(code)) addedTexts.push({ file, line: newLine, value });
       newLine++;
     }
@@ -238,9 +276,9 @@ const entriesForFile = (file) =>
 const blocking = [];
 const valueRows = changedValues.map((item) => {
   const matches = entriesForFile(item.file);
-  const documented = matches.find((e) => e.expectedValueChanged === true && (e.classification === 'BUG' || signedOff(e)));
+  const documented = matches.find((e) => e.expectedValueChanged === true && signedOff(e));
   const replacement = newValues.filter((n) => n.file === item.file && n.hunk === item.hunk).map((n) => n.raw);
-  if (!documented) blocking.push(`${item.file}:${item.line}: expected value "${item.raw}" changed or removed, and ${reportPath} does not list it (an entry for this file with expectedValueChanged: true and classification BUG or a human sign-off)`);
+  if (!documented) blocking.push(`${item.file}:${item.line}: expected value "${item.raw}" changed or removed, and ${reportPath} does not list it with a human sign-off (an entry for this file with expectedValueChanged: true and humanSignOff)`);
   return {
     ...item,
     after: replacement.length ? replacement.join(', ') : '(removed)',
@@ -249,7 +287,7 @@ const valueRows = changedValues.map((item) => {
 });
 
 for (const [i, e] of entries.entries()) {
-  if (e?.expectedValueChanged === true && e?.classification !== 'BUG' && !signedOff(e)) {
+  if (e?.expectedValueChanged === true && !signedOff(e)) {
     blocking.push(`${reportPath} entries[${i}] (${e.test ?? e.file}): expectedValueChanged is true for a ${e.classification} entry without a human sign-off`);
   }
 }
@@ -259,9 +297,9 @@ if (changedValues.length && reportSource === undefined) blocking.push(`expected 
 // The diff shows a changed value, but the matching entry says no expected value changed.
 const inconsistent = valueRows.filter((r) => entriesForFile(r.file).some((e) => e.expectedValueChanged === false));
 
-const bugWithoutFixme = entries.filter((e) => e?.classification === 'BUG' && isNonEmptyString(e?.file)).filter((e) => {
+const bugWithoutMark = entries.filter((e) => e?.classification === 'BUG' && isNonEmptyString(e?.file)).filter((e) => {
   const content = headRef === 'HEAD' && fs.existsSync(e.file) ? fs.readFileSync(e.file, 'utf8') : tryGit('show', `${headRef}:${e.file}`) ?? '';
-  return !/test\.fixme\(/.test(content);
+  return !/test\.(fail|fixme)\(/.test(content);
 });
 
 // ---------------------------------------------------------------------------------------------
@@ -276,8 +314,12 @@ lines.push(`Result: **${blocking.length ? 'FAIL' : 'PASS'}**`);
 lines.push('');
 lines.push(`- Compared: \`${short(mergeBase)}\` (merge base with \`${baseRef}\`) to \`${short(headRef)}\``);
 lines.push(`- Test files changed under \`tests/\`: ${changedFiles.length}`);
+if (notAudited.length) lines.push(`- Lab 5 walls changed (not part of the suite, not audited): ${notAudited.map((f) => `\`${f}\``).join(', ')}`);
+if (newOnBranch.length) lines.push(`- New on this branch, compared with the commit that added them: ${newOnBranch.length}`);
 lines.push(`- Expected business values changed or removed: ${changedValues.length}`);
 lines.push(`- Expected texts changed (review, not blocking): ${changedTexts.length}`);
+const marksGone = missingFrom(removedMarks.map((r) => ({ ...r, value: `${r.file}|${r.code}` })), addedMarks.map((a) => ({ ...a, value: `${a.file}|${a.code}` })));
+lines.push(`- Known-bug marks removed (review, not blocking): ${marksGone.length}`);
 if (reportSource === undefined) {
   lines.push(`- \`${reportPath}\`: not found`);
 } else {
@@ -302,6 +344,16 @@ if (changedTexts.length) {
     lines.push(`| \`${t.file}:${t.line}\` | ${escape(t.value)} | ${now.length ? escape(now.join('; ')) : '(removed)'} |`);
   }
 }
+if (marksGone.length) {
+  lines.push('');
+  lines.push('### Known-bug marks removed (review)');
+  lines.push('');
+  lines.push('Right when the bug is fixed in the application; wrong when a healer made the test pass.');
+  lines.push('');
+  lines.push('| Where (base) | Mark |');
+  lines.push('|---|---|');
+  for (const r of marksGone) lines.push(`| \`${r.file}:${r.line}\` | \`${escape(r.code)}\` |`);
+}
 if (entries.length) {
   lines.push('');
   lines.push('### heal-report.json entries');
@@ -316,9 +368,9 @@ if (inconsistent.length) {
   lines.push('');
   lines.push(`Inconsistent: \`${reportPath}\` says \`expectedValueChanged: false\` for ${[...new Set(inconsistent.map((r) => `\`${r.file}\``))].join(', ')}, but the diff changes an expected value there. Check the report against the diff.`);
 }
-if (bugWithoutFixme.length) {
+if (bugWithoutMark.length) {
   lines.push('');
-  lines.push(`Note: BUG entries whose test file has no \`test.fixme(\`: ${bugWithoutFixme.map((e) => `\`${e.file}\``).join(', ')}`);
+  lines.push(`Note: BUG entries whose test file has no \`test.fail(\`: ${bugWithoutMark.map((e) => `\`${e.file}\``).join(', ')}`);
 }
 if (blocking.length) {
   lines.push('');
@@ -326,7 +378,7 @@ if (blocking.length) {
   lines.push('');
   for (const b of blocking) lines.push(`- ${escape(b)}`);
   lines.push('');
-  lines.push('Fix: undo the changed expected value and mark the test with `test.fixme()` (BUG). If a person decided that the new value is correct, list the change in the matching entry (`expectedValueChanged: true`) and add a `humanSignOff` (`by`, `at`, `reason`).');
+  lines.push('Fix: undo the changed expected value and mark the test with `test.fail()` and a BUG comment. If a person decided that the new value is correct, list the change in the matching entry (`expectedValueChanged: true`) and add a `humanSignOff` (`by`, `at`, `reason`).');
 }
 lines.push('');
 
