@@ -1,0 +1,38 @@
+{
+  "version": 1,
+  "createdAt": "2026-10-06T00:00:00Z",
+  "release": 3,
+  "tool": "claude-code",
+  "model": "claude-opus-4-8",
+  "requestedBy": "AnnaGrycova",
+  "entries": [
+    {
+      "test": "tests/transfer.spec.ts:30 > Domestic Transfer > Domestic transfer review shows correct amount, fee and total",
+      "file": "tests/transfer.spec.ts",
+      "error": "expect(locator).toBeVisible() failed: getByRole('cell', { name: '200 HUF', exact: true }) element(s) not found",
+      "classification": "BUG",
+      "reason": "The review page computed the fee as 3% of the amount (750 HUF on 25,000) instead of max(200 HUF, 0.3%). The behaviour changed, the assertion and its expected value are correct per the business rule.",
+      "change": "Added test.fail(gremlinRelease === 3, ...) as the first line of the test body with an explanatory comment. Assertions unchanged.",
+      "expectedValueChanged": false,
+      "expected": "Fee 200 HUF, Total 25,200 HUF (fee = max(200 HUF, 0.3% of 25,000 = 75 HUF))",
+      "observed": "Fee 750 HUF, Total 25,750 HUF (3% of amount)",
+      "tracePath": "test-results/tests-transfer-Domestic-Tr-e4c48-orrect-amount-fee-and-total-chromium/trace.zip",
+      "model": "claude-opus-4-8",
+      "tool": "claude-code"
+    },
+    {
+      "test": "tests/transfer.spec.ts:162 > Domestic Transfer > Fee calculation boundaries",
+      "file": "tests/transfer.spec.ts",
+      "error": "expect(locator).toHaveText(expected) failed: Expected \"200 HUF\" Received \"300 HUF\"",
+      "classification": "BUG",
+      "reason": "For amount 10,000 the review page charged 300 HUF (3% of amount) instead of 200 HUF. The minimum-fee behaviour changed to a 3% rate; the assertions use values derived from the business rule and stay unchanged.",
+      "change": "Added test.fail(gremlinRelease === 3, ...) as the first line of the test body with an explanatory comment. Assertions unchanged.",
+      "expectedValueChanged": false,
+      "expected": "Fee 200 HUF, Total 10,200 HUF for amount 10,000 (fee = max(200 HUF, 0.3% of 10,000 = 30 HUF))",
+      "observed": "Fee 300 HUF, Total 10,300 HUF (3% of amount)",
+      "tracePath": "test-results/tests-transfer-Domestic-Transfer-Fee-calculation-boundaries-chromium/trace.zip",
+      "model": "claude-opus-4-8",
+      "tool": "claude-code"
+    }
+  ]
+}

@@ -27,7 +27,10 @@ test.describe('Domestic Transfer', () => {
   // /secure/challenge — a deliberate wall, not a plain field. This test verifies the review
   // page's computed business values (amount, fee, total); confirming through the secure PIN is
   // out of scope here (see the walls labs).
-  test('Domestic transfer review shows correct amount, fee and total', async ({ page }) => {
+  test('Domestic transfer review shows correct amount, fee and total', async ({ page, gremlinRelease }) => {
+    // BUG: fee on release 3: expected 200 HUF (fee = max(200 HUF, 0.3% of 25,000 = 75)), observed 750 HUF (3% of amount, total 25,750 instead of 25,200). Not healed, see heal-report.json.
+    test.fail(gremlinRelease === 3, 'BUG: release 3 charges 3% of amount instead of max(200 HUF, 0.3%)');
+
     // 1. Navigate to /transfer
     await transfer.goto();
     await expect(page).toHaveURL('/transfer');
@@ -156,7 +159,10 @@ test.describe('Domestic Transfer', () => {
     await expect(page).toHaveURL('/transfer/review');
   });
 
-  test('Fee calculation boundaries', async ({ page }) => {
+  test('Fee calculation boundaries', async ({ page, gremlinRelease }) => {
+    // BUG: fee on release 3: for amount 10,000 expected 200 HUF (fee = max(200 HUF, 0.3% of 10,000 = 30)), observed 300 HUF (3% of amount, total 10,300 instead of 10,200). Not healed, see heal-report.json.
+    test.fail(gremlinRelease === 3, 'BUG: release 3 charges 3% of amount instead of max(200 HUF, 0.3%)');
+
     // Helper function to test a fee calculation
     const testFee = async (amount: string, expectedFee: string, expectedTotal: string, usesSavings = false) => {
       await transfer.goto();
