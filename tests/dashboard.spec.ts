@@ -24,13 +24,13 @@ test.describe('Dashboard', () => {
 
     // 2. Verify Everyday Account: IBAN 'HU39 9992 0265 3141 5926 5358 9797', balance '1,250,000 HUF'
     const everydayAccount = dashboard.account('Everyday Account');
-    await expect(everydayAccount.getByRole('heading', { level: 2 })).toHaveText('Everyday Account');
+    await expect(everydayAccount.getByRole('rowheader')).toHaveText('Everyday Account');
     await expect(everydayAccount.getByText('HU39 9992 0265 3141 5926 5358 9797')).toBeVisible();
     await expect(everydayAccount.getByText('1,250,000 HUF')).toBeVisible();
 
     // 3. Verify Savings Account: IBAN 'HU03 9992 0265 2718 2818 2845 9043', balance '5,400,000 HUF'
     const savingsAccount = dashboard.account('Savings Account');
-    await expect(savingsAccount.getByRole('heading', { level: 2 })).toHaveText('Savings Account');
+    await expect(savingsAccount.getByRole('rowheader')).toHaveText('Savings Account');
     await expect(savingsAccount.getByText('HU03 9992 0265 2718 2818 2845 9043')).toBeVisible();
     await expect(savingsAccount.getByText('5,400,000 HUF')).toBeVisible();
 

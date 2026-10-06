@@ -73,7 +73,7 @@ test.describe('Domestic Transfer', () => {
     await transfer.continue();
 
     // 4. Verify three field errors
-    await expect(transfer.fieldError('Enter a beneficiary name.')).toBeVisible();
+    await expect(transfer.fieldError('Enter a payee name.')).toBeVisible();
     await expect(transfer.fieldError('Check the IBAN first.')).toBeVisible();
     await expect(transfer.fieldError('Enter an amount greater than 0.')).toBeVisible();
     await expect(page).toHaveURL('/transfer');
