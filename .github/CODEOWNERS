@@ -6,5 +6,5 @@
 # username in place of the placeholder. The owner needs write access to your fork
 # (Settings > Collaborators). An unknown username here shows an error on GitHub.
 #
-/tests/   @paveldedik
-/specs/   @paveldedik
+# /tests/   @paveldedik
+# /specs/   @paveldedik
