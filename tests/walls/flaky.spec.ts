@@ -13,11 +13,11 @@ test('dashboard shows the balance and the exchange rate', async ({ page, context
   await skipCookieDialog(context, baseURL!);
   await signIn(page, env('GREMLIN_USER'), env('GREMLIN_PASSWORD'));
 
-  // "The accounts are always there after a second."
-  await page.waitForTimeout(1000);
-  expect(await page.getByText('1,250,000 HUF').isVisible()).toBe(true);
+  // Web-first wait: the spinner's random 0.3-2.5 s delay no longer matters. The assertion retries
+  // until the accounts have loaded, instead of guessing a fixed timeout.
+  await expect(page.getByText('1,250,000 HUF')).toBeVisible();
 
-  // "The rate was 396.01 when this test was written, so it is below 400."
-  const rateText = await page.getByText(/^EUR\/HUF /).innerText();
-  expect(Number(rateText.replace('EUR/HUF', '').trim())).toBeLessThan(400);
+  // The EUR/HUF rate is random on every load, so assert its format, not the number.
+  const rate = page.getByRole('paragraph').filter({ hasText: 'EUR/HUF' });
+  await expect(rate).toHaveText(/^EUR\/HUF\s*[\d,]+\.\d{2}$/);
 });

@@ -26,9 +26,9 @@ export class DashboardPage {
     await this.page.goto('/dashboard');
   }
 
-  /** The account card (region) that contains the given account name. */
+  /** The account row that contains the given account name. */
   account(name: string): Locator {
-    return this.page.getByRole('region').filter({ hasText: name });
+    return this.page.getByRole('row').filter({ hasText: name });
   }
 
   /** The signed-in user name shown in the header, matched exactly. */

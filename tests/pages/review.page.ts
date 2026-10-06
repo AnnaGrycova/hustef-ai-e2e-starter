@@ -12,7 +12,7 @@ export class ReviewPage {
     this.page = page;
     this.heading = page.getByRole('heading', { level: 1, name: 'Review transfer' });
     this.details = page.getByRole('table', { name: 'Transfer details' });
-    this.confirmButton = page.getByRole('button', { name: 'Confirm transfer' });
+    this.confirmButton = page.getByRole('button', { name: 'Send money' });
     this.wrongPin = page.getByRole('alert').filter({ hasText: 'Wrong PIN.' });
   }
 
