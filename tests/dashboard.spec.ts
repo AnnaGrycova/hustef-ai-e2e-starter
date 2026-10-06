@@ -1,19 +1,16 @@
 // spec: specs/gremlin-bank.md
 // seed: seed.spec.ts
 
-import { test, expect, env } from './fixtures';
-import { LoginPage } from './pages/login.page';
+import { test, expect } from './fixtures';
 import { DashboardPage } from './pages/dashboard.page';
 
 test.describe('Dashboard', () => {
   let dashboard: DashboardPage;
 
   test.beforeEach(async ({ page }) => {
-    // Sign in before each test
-    const login = new LoginPage(page);
+    // Already signed in via the saved state (see the `signed-in` project in playwright.config.ts).
     dashboard = new DashboardPage(page);
-    await login.goto();
-    await login.signIn(env('GREMLIN_USER'), env('GREMLIN_PASSWORD'));
+    await dashboard.goto();
     await expect(dashboard.heading).toBeVisible();
   });
 

@@ -21,11 +21,11 @@ test('a transfer is confirmed with the PIN from the closed shadow root', async (
   // The wall: no locator finds the PIN field.
   await expect(page.getByLabel('Transaction PIN')).toHaveCount(0);
 
-  // TODO (Lab 5, wall 3b): enter TEST_PIN with the keyboard. Keyboard focus reaches inside a closed shadow root:
-  //   1. focus the confirm button:     await page.getByRole('button', { name: names.confirm }).focus();
-  //   2. move focus back into the PIN: press Shift+Tab with page.keyboard.press(...)
-  //   3. type the PIN:                 page.keyboard.type(...)
-  void TEST_PIN;
+  // Lab 5, wall 3b: keyboard focus reaches inside a closed shadow root even though locators cannot.
+  //   1. focus the confirm button, 2. Shift+Tab back into the PIN field, 3. type the PIN.
+  await page.getByRole('button', { name: names.confirm }).focus();
+  await page.keyboard.press('Shift+Tab');
+  await page.keyboard.type(TEST_PIN);
 
   await page.getByRole('button', { name: names.confirm }).click();
   const dialog = page.getByRole('dialog', { name: names.approvalDialog });

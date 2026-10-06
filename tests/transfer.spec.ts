@@ -1,9 +1,7 @@
 // spec: specs/gremlin-bank.md
 // seed: seed.spec.ts
 
-import { test, expect, env } from './fixtures';
-import { LoginPage } from './pages/login.page';
-import { DashboardPage } from './pages/dashboard.page';
+import { test, expect } from './fixtures';
 import { TransferPage } from './pages/transfer.page';
 import { ReviewPage } from './pages/review.page';
 
@@ -12,14 +10,9 @@ test.describe('Domestic Transfer', () => {
   let review: ReviewPage;
 
   test.beforeEach(async ({ page }) => {
-    // Sign in before each test
-    const login = new LoginPage(page);
-    const dashboard = new DashboardPage(page);
+    // Already signed in via the saved state (see the `signed-in` project in playwright.config.ts).
     transfer = new TransferPage(page);
     review = new ReviewPage(page);
-    await login.goto();
-    await login.signIn(env('GREMLIN_USER'), env('GREMLIN_PASSWORD'));
-    await expect(dashboard.heading).toBeVisible();
   });
 
   // Plan 4.5 wants a full confirmation, but on this release the Transaction PIN is a secure

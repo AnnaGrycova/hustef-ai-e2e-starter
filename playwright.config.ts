@@ -67,19 +67,32 @@ export default defineConfig({
     proxy,
   },
   projects: [
-    // The default project: seed.spec.ts and everything you add under tests/.
+    // Logged-out project: seed.spec.ts and the sign-in / sign-out behaviour, which must start
+    // without a session. The signed-in specs run in the `signed-in` project instead, so ignore
+    // them here (and never pick up the *.setup.ts files).
     {
       name: 'chromium',
       use: { ...devices['Desktop Chrome'] },
-      testIgnore: [...ignored, '**/*.setup.ts'],
+      testIgnore: [...ignored, '**/*.setup.ts', 'tests/dashboard.spec.ts', 'tests/transfer.spec.ts'],
     },
-    // Lab 5, wall 1: sign in once and save the browser state...
+    // Sign in once as the demo user and save the browser state to playwright/.auth/demo.json.
+    // Its own testIgnore overrides the global one so this setup runs on a normal `npx playwright test`,
+    // not only when tests/walls is named.
     {
       name: 'setup',
       testMatch: 'tests/walls/auth.setup.ts',
+      testIgnore: ['node_modules/**', 'labs/**'],
       use: { ...devices['Desktop Chrome'] },
     },
-    // ...then start these tests already signed in.
+    // The signed-in suite: depends on `setup`, so every test starts already authenticated from the
+    // saved state — no UI sign-in per test.
+    {
+      name: 'signed-in',
+      dependencies: ['setup'],
+      testMatch: ['tests/dashboard.spec.ts', 'tests/transfer.spec.ts'],
+      use: { ...devices['Desktop Chrome'], storageState: DEMO_AUTH_FILE },
+    },
+    // Lab 5, wall 1: the walls' own signed-in exercise. Runs only when tests/walls is named.
     {
       name: 'with-auth',
       dependencies: ['setup'],
